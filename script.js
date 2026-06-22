@@ -8,71 +8,93 @@ let resetDisplay = false
 
 buttons.forEach((button) => {
   button.addEventListener('click', () => {
-    const value = button.innerText.trim()
+    handleInput(button.innerText.trim())
+  })
+})
 
-    if (value === 'AC') {
+window.addEventListener('keydown', (e) => {
+  let key = e.key
+
+  if (key === 'Escape' || key === 'c' || key === 'C') key = 'AC'
+  if (key === 'Backspace') key = 'X'
+  if (key === 'Enter' || key === '=') key = '='
+  if (key === '*') key = '×'
+  if (key === '/') key = '÷'
+
+  const targetButton = Array.from(buttons).find(
+    (btn) => btn.innerText.trim() === key
+  )
+  if (targetButton) {
+    targetButton.focus()
+    handleInput(key)
+  }
+})
+
+function handleInput (value) {
+  if (value === 'AC') {
+    currentInput = '0'
+    previousInput = ''
+    operation = null
+    updateDisplay()
+    return
+  }
+
+  if (value === 'X') {
+    if (currentInput.length > 1) {
+      currentInput = currentInput.slice(0, -1)
+    } else {
       currentInput = '0'
-      previousInput = ''
+    }
+    updateDisplay()
+    return
+  }
+
+  if (value === '+/-') {
+    currentInput = stripError(parseFloat(currentInput) * -1).toString()
+    updateDisplay()
+    return
+  }
+
+  if (value === '%') {
+    currentInput = stripError(parseFloat(currentInput) / 100).toString()
+    updateDisplay()
+    return
+  }
+
+  if (value === '.') {
+    if (resetDisplay) {
+      currentInput = '0.'
+      resetDisplay = false
+    } else if (!currentInput.includes('.')) {
+      currentInput += '.'
+    }
+    updateDisplay()
+    return
+  }
+
+  if (value === '=') {
+    if (operation && previousInput !== '') {
+      currentInput = calculate(previousInput, currentInput, operation)
       operation = null
-      updateDisplay()
-      return
-    }
-
-    if (value === 'X') {
-      if (currentInput.length > 1) {
-        currentInput = currentInput.slice(0, -1)
-      } else {
-        currentInput = '0'
-      }
-      updateDisplay()
-      return
-    }
-
-    if (value === '+/-') {
-      currentInput = stripError(parseFloat(currentInput) * -1).toString()
-      updateDisplay()
-      return
-    }
-
-    if (value === '%') {
-      currentInput = stripError(parseFloat(currentInput) / 100).toString()
-      updateDisplay()
-      return
-    }
-
-    if (value === '.') {
-      if (resetDisplay) {
-        currentInput = '0.'
-        resetDisplay = false
-      } else if (!currentInput.includes('.')) {
-        currentInput += '.'
-      }
-      updateDisplay()
-      return
-    }
-
-    if (value === '=') {
-      if (operation && previousInput !== '') {
-        currentInput = calculate(previousInput, currentInput, operation)
-        operation = null
-        previousInput = ''
-        resetDisplay = true
-        updateDisplay()
-      }
-      return
-    }
-
-    if (['+', '-', '×', '÷'].includes(value)) {
-      if (operation && previousInput !== '' && !resetDisplay) {
-        currentInput = calculate(previousInput, currentInput, operation)
-      }
-      operation = value
-      previousInput = currentInput
+      previousInput = ''
       resetDisplay = true
       updateDisplay()
-      return
     }
+    return
+  }
 
+  if (['+', '-', '×', '÷'].includes(value)) {
+    if (operation && previousInput !== '' && !resetDisplay) {
+      currentInput = calculate(previousInput, currentInput, operation)
+    }
+    operation = value
+    previousInput = currentInput
+    resetDisplay = true
+    updateDisplay()
+    return
+  }
+
+  if (/^[0-9]$/.test(value)) {
     if (resetDisplay) {
       currentInput = value
       resetDisplay = false
@@ -80,8 +102,8 @@ buttons.forEach((button) => {
       currentInput = currentInput === '0' ? value : currentInput + value
     }
     updateDisplay()
-  })
-})
+  }
+}
 
 function updateDisplay () {
   display.innerText = currentInput
